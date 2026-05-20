@@ -1,0 +1,119 @@
+Documentación de Proceso: Cálculo de Booking de Ventas e Inputs para Automatización
+Este documento detalla el flujo actual (manual) para el cálculo del Booking de Ventas (Ingreso de Ventas) basado en la plataforma interna El Gestor (alimentada por Softland), el contexto del análisis del negocio y las especificaciones para su futura automatización mediante APIs y reglas de negocio.
+📌 1. Flujo de Proceso Actual (Manual)
+Inicio del Proceso
+Para comenzar, el operador ingresa a El Gestor (aplicación web interna). Esta plataforma extrae la información desde Softland y asigna un Código de Negocio automatizado según el centro de costos.
+Pasos Secuenciales
+1.Filtrar Órdenes:Paso 1.
+Abrir el listado de órdenes de venta ingresadas con fecha desde el inicio del año actual hasta el día de hoy.
+2.Exportar y Limpiar Columnas:Paso 2 y 3.
+Exportar el listado a Excel dentro de El Gestor y mantener únicamente las 10 columnas requeridas hasta "Total Venta" (Ver estructura de la tabla en la siguiente sección).
+3.Conversión de Moneda:Paso 4.
+Calcular el valor del Dólar o UF de manera manual para homologar el monto del ingreso según la moneda en la que se negoció.
+4.Segmentación por Código de Negocio:Paso 5.
+Separar los datos por tipo de proyecto y área tomando como referencia la estructura del Código de Negocio.
+5.Asignación de Gerente de Cuenta:Paso 6.
+Identificar y agregar al Gerente de Cuenta según el tipo de cuenta (Profundidad mediante listado estático o Cobertura abriendo el detalle del negocio).
+6.Temporalidad:Paso 7.
+Calcular e ingresar manualmente el mes y el cuartil (trimestre) del año correspondientes.
+7.Depuración Interempresa:Paso 8.
+Identificar y eliminar las ventas entre razones sociales (Acanto / Vadco / Teknos) para evitar la duplicidad de ingresos.
+8.Conciliación de Preliminares:Paso 9.
+Cruzar los negocios "Preliminares" con las ventas reales ("VTA") para evitar que se dupliquen montos en el sistema.
+📊 2. Estructura de la Base de Datos (10 Columnas Iniciales)
+Campo	Descripción Breve
+N Venta	Número de orden.
+Documentos	Notas de facturación, despachos.
+Fecha Emisión	Fecha en que se emitió la Orden de Compra.
+Fecha Creación	Fecha en que se ingresó al sistema Softland.
+Estado	Abierto o Cerrado (Si faltan documentos es Cerrado).
+Cliente	Nombre del cliente.
+OC Cliente	Orden de compra emitida por el cliente.
+Código Negocio	Nombre específico del negocio (ver nomenclatura abajo).
+Moneda Venta	UF / Dólar / CLP.
+Total Venta	Valor total de la Orden de Compra.
+🔍 3. Desglose del Código de Negocio
+El código de negocio sigue la siguiente estructura estándar:
+EMPRESA-(ÁREA + CORRELATIVO)-CATEGORÍA-SUB_CATEGORÍA
+Ejemplos:
+•	AC-EMP6590-VTA-SRE
+•	TK-VAD6554-VTA-SEQ
+•	AC-OPE6556-VTA-SEQ
+Diccionario de Variables:
+•	Razones Sociales (Empresa):
+o	AC: Acanto
+o	TK / TKN: Vadco / Teknos
+•	Áreas (Centro de Ventas):
+o	EMP: Empresa
+o	VAD: Distribución
+o	OPE: Operación
+•	Matriz de Categorías y Sub-Categorías:
+Categoría de Negocios	Sub-Categoría de Negocios (Tipos de Negocios)
+VENTA	SEQ: Solo Equipos
+
+
+SSS: Solo Servicios
+
+
+PRY: Proyecto
+
+
+SRE: Servicios Recurrentes
+PRELIMINAR	SEQ: Solo Equipos
+
+
+SSS: Solo Servicios
+
+
+PRY: Proyecto
+
+
+SER: Servicios Recurrentes
+INVERSION	SEQ: Solo Equipos
+
+
+SSS: Solo Servicios
+
+
+PRY: Proyecto
+STOCK	SEQ: Solo Equipos
+FINANCIADO	SEQ: Solo Equipos
+
+
+PRY: Proyecto
+👥 4. Regla de Asignación de Gerentes de Cuenta
+Existen dos tipos de cuentas comerciales para definir al responsable:
+1.	Profundidad: Se determina mirando el nombre del Cliente. Cada ejecutivo tiene una cartera fija asignada que no cambia (se extrae de un listado de clientes asignados).
+2.	Cobertura: No están asignadas de forma fija. Se debe abrir obligatoriamente el detalle del negocio en el sistema para verificar qué ejecutivo lo ingresó.
+🧼 5. Reglas de Limpieza de Datos (Casos Especiales)
+A. Ventas Interempresa (Entre Razones Sociales)
+Ocurre cuando una empresa del grupo le vende a otra y esta última le vende al cliente final. Objetivo: Eliminar la venta interna para no duplicar el ingreso.
+•	Ejemplo:
+o	AC-EMP5359-VTA-SEQ (Venta interna: Acanto le vende a Vadco) -> Se elimina (Menor número correlativo N).
+o	TK-EMP5360-VTA-SEQ (Venta externa: Vadco le vende a Terceros) -> Se mantiene (Mayor número correlativo N+1).
+•	Regla de descarte: Al revisar el detalle de la venta externa (TK), se verifica si el proveedor es Acanto. De ser así, se elimina el registro interempresa con el correlativo más bajo.
+B. Ventas Preliminares
+Son negocios registrados sin documentación formal (Faltan OC o contratos).
+•	Si un negocio se ingresa como Preliminar y tiempo después aparece un registro de Venta (VTA) con su mismo correlativo, no se debe duplicar.
+•	Se deben revisar los detalles para consolidar los montos correctos en el cálculo del booking.
+🎯 6. Contexto y Objetivos del Análisis Comercial
+Una vez consolidada esta base de datos, la gerencia realiza las siguientes acciones:
+•	Control de Metas: Medición del nivel de ventas mensuales y trimestrales comparadas contra los objetivos de cada Gerente de Cuenta.
+•	Análisis de Mix de Ventas: Cálculo de la participación porcentual (%) del booking total distribuido por:
+o	Tipo de Cuenta (Cobertura vs. Profundidad)
+o	Área (EMP, OPE, VAD)
+o	Categoría (VTA, PRE, FIN, INV, STOCK)
+o	Sub-categoría (SEQ, SSS, PRY, SRE)
+🤖 Plan de Automatización (Próxima Fase)
+A continuación se detallan los requerimientos técnicos para el desarrollo del script/sistema que automatizará este flujo:
+1. Extracción de Datos y Homologación de Moneda
+•	Conexión API Gestor: Descargar automáticamente las 10 columnas iniciales de la base de datos de manera directa.
+•	Columna Tipo de Cambio Automatizada: Crear un campo extra que consulte mediante API externa (o plataforma interna de Acanto) el valor del Dólar (USD) de forma exacta a la Fecha de Emisión del documento para hacer la conversión automática.
+2. Procesamiento de Texto y Enriquecimiento
+•	Desglose de Código: El sistema deberá separar mediante código los campos de Área, Categoría y Sub-categoría usando los delimitadores - del Código de Negocio.
+•	Integración CRM: Cruzar la información con el CRM o API del Gestor para asignar automáticamente el Gerente de Cuenta según el cliente (Profundidad) o el creador del negocio (Cobertura).
+•	Fechas Inteligentes: Calcular de forma automática los campos de Mes y Cuartil (Trimestre) del año basándose en la Fecha de Emisión.
+3. Automatización de Filtros de Limpieza (Scripts)
+•	Filtro Interempresa: El sistema identificará automáticamente los registros donde el proveedor sea Acanto o Teknos. Validará el match de correlativos N y N+1 y eliminará de forma automática el registro con el correlativo más bajo, dejando únicamente de cara al cálculo la venta al cliente tercero.
+•	Filtro Antiduplicidad de Preliminares: El sistema impedirá el ingreso de códigos de negocio duplicados. Si un registro pasa de Preliminar a Venta en periodos distintos, el sistema filtrará el duplicado y mantendrá el valor en el periodo (fecha de emisión) en el que se ingresó originalmente.
+Ejemplo: Si entró el año pasado como preliminar y este año se cierra como venta, el impacto en el Booking pertenecerá contablemente al año pasado.
