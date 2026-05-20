@@ -25,7 +25,7 @@ flowchart TD
     Adj_Prelim --> DB_Final
     
     DB_Final --> Dashboards([Fin: BI & Dashboards en Tiempo Real<br>- Cumplimiento de metas de Gerentes de Cuenta<br>- Análisis por Cuenta, Área, Categoría y Sub-categoría])
-
+   ```
     %% Estilos para el equipo de desarrollo (Diferenciación de capas)
     style Start fill:#f8bbd0,stroke:#c2185b,stroke-width:2px
     style Dashboards fill:#f8bbd0,stroke:#c2185b,stroke-width:2px
@@ -42,6 +42,6 @@ flowchart TD
     style Del_Inter fill:#e8f5e9,stroke:#4caf50,stroke-width:1px
     style Adj_Prelim fill:#e8f5e9,stroke:#4caf50,stroke-width:1px
     style DB_Final fill:#e8f5e9,stroke:#4caf50,stroke-width:2px
-```
+
 
    
